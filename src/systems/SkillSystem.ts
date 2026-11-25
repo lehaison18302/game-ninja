@@ -62,6 +62,7 @@ export class SkillSystem {
   private cast(time: number): boolean {
     if (this.id === 'shadowDash') return this.shadowDash(time);
     const p = this.player;
+    p.playAttack(time, true);
     audio.sfx('skill');
     this.fx.burst(p.x, p.y - 16, characters[p.characterId].color, 12);
     this.fx.vibrate(20);

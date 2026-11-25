@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { COLORS, GAME_H, GAME_W, STAGE_COUNT } from '../constants';
 import { initCamera } from '../core/camera';
+import { createNinjaAnims, preloadNinjas } from '../core/ninjaAnims';
 import { t } from '../text/t';
 import { makeText } from '../ui/text';
 
@@ -25,6 +26,7 @@ export class PreloadScene extends Phaser.Scene {
       bar.destroy();
     });
 
+    preloadNinjas(this.load);
     this.load.setPath('maps');
     this.load.image('tiles', 'tiles.png');
     for (let i = 1; i <= STAGE_COUNT; i++)
@@ -32,6 +34,7 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
+    createNinjaAnims(this.anims);
     this.scene.start('TitleScene');
   }
 }

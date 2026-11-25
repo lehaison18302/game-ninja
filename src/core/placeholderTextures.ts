@@ -1,11 +1,11 @@
 import Phaser from 'phaser';
 import { GAME_H, GAME_W } from '../constants';
-import { characters, CHARACTER_ORDER } from '../data/characters';
 import { makeStageTextures } from './placeholderStages';
 
 /**
  * Hình tạm sinh bằng code (Giai đoạn đầu). Khi có spritesheet thật chỉ cần nạp lại cùng tên texture.
- * Mọi nhân vật vẽ quay mặt sang phải, quay trái bằng flipX.
+ * Mọi nhân vật vẽ quay mặt sang phải, quay trái bằng flipX. Ninja người chơi đã dùng ảnh thật
+ * (public/sprites, nạp ở PreloadScene).
  */
 export function makePlaceholderTextures(scene: Phaser.Scene): void {
   const g = scene.make.graphics({ x: 0, y: 0 }, false);
@@ -20,38 +20,6 @@ export function makePlaceholderTextures(scene: Phaser.Scene): void {
   };
 
   tex('px', 2, 2, () => rect(0, 0, 2, 2, 0xffffff));
-
-  for (const id of CHARACTER_ORDER) {
-    const col = characters[id].color;
-    tex(`ninja-${id}`, 24, 32, () => {
-      rect(7, 22, 4, 10, 0x1b1f33);
-      rect(13, 22, 4, 10, 0x1b1f33);
-      rect(6, 11, 12, 12, 0x262b45);
-      rect(6, 19, 12, 2, col);
-      rect(16, 14, 6, 3, 0x1b1f33);
-      rect(7, 2, 10, 10, 0x1b1f33);
-      rect(11, 5, 6, 3, 0xe8c9a0);
-      rect(14, 6, 2, 1, 0x000000);
-      rect(7, 3, 10, 2, col);
-      rect(3, 4, 4, 2, col);
-      rect(1, 6, 3, 2, col);
-    });
-    tex(`ninja-${id}-ball`, 16, 16, () => {
-      g.fillStyle(0x262b45, 1).fillCircle(8, 8, 7);
-      rect(2, 5, 12, 2, col);
-      rect(9, 8, 4, 3, 0xe8c9a0);
-      rect(11, 9, 1, 1, 0x000000);
-    });
-    tex(`ninja-${id}-prone`, 32, 14, () => {
-      rect(2, 6, 22, 8, 0x262b45);
-      rect(2, 9, 4, 2, col);
-      rect(22, 8, 6, 2, 0x1b1f33);
-      rect(23, 2, 9, 10, 0x1b1f33);
-      rect(27, 5, 5, 3, 0xe8c9a0);
-      rect(23, 3, 9, 2, col);
-      rect(18, 3, 5, 2, col);
-    });
-  }
 
   // đạn người chơi
   tex('p-shuriken', 9, 9, () => {

@@ -24,8 +24,12 @@ sàn sập, thuyền, băng chuyền, cột lửa) đọc trực tiếp từ fil
 
 ## Thay hình/âm thanh thật
 
-- Hình tạm sinh bằng code trong `src/core/placeholderTextures.ts` và `placeholderStages.ts`
-  (tên texture: `ninja-<id>`, `enemy-*`, `boss-*`, `p-*`, `e-*`, `item-*`, `bg*`…). Nạp spritesheet cùng tên là thay được.
+- **Ninja người chơi** dùng ảnh vẽ tay trong `art/ninjas/*.jpg` (nền trắng). Sửa ảnh xong chạy
+  `python tools/build_sprites.py` (cần `pip install pillow numpy scipy`) để cắt lại thành
+  `public/sprites/ninja-<id>.png` + `src/data/ninjaSprites.ts`. Chọn khung cho từng động tác
+  (idle, run, jump, fall, crouch, attack, aim, dash) ở bảng `SHEETS` trong script; tốc độ phát ở `src/core/ninjaAnims.ts`.
+- Hình tạm còn lại sinh bằng code trong `src/core/placeholderTextures.ts` và `placeholderStages.ts`
+  (tên texture: `enemy-*`, `boss-*`, `p-*`, `e-*`, `item-*`, `bg*`…). Nạp spritesheet cùng tên là thay được.
 - Âm thanh được tổng hợp bằng code (`src/audio/`), chỉnh thông số trong `AudioSystem.ts`.
 - Cân bằng: `src/data/` (`weapons.ts`, `skills.ts`, `enemies.ts`, `bosses.ts`, `characters.ts`) và `src/constants.ts` (`PLAYER`, `POOL`).
 - Chữ hiển thị: duy nhất `src/text/vi.ts`.

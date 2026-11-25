@@ -13,6 +13,8 @@ import type { InputState } from './InputController';
 const BAR_W = 22;
 /** Chạm nút đánh lúc vũ khí còn đang hồi thì vẫn ra đòn ngay khi hồi xong (nếu trong khoảng này). */
 const ATTACK_BUFFER_MS = 250;
+/** Vũ khí hồi lâu hơn ngần này giây thì tư thế ra đòn được hiện cả khi đang chạy/nhảy. */
+const BIG_SWING_COOLDOWN_S = 0.3;
 
 /** Ra đòn theo dữ liệu `weapons.ts`: cooldown, quạt đạn, gồng cung, chém/ném của Ren. Đạn lấy từ pool. */
 export class WeaponSystem implements ProjectileSpawner {
@@ -67,6 +69,7 @@ export class WeaponSystem implements ProjectileSpawner {
     this.chargeStart = -1;
     this.player.speedMul = 1;
     this.player.chargeRatio = 0;
+    this.player.aiming = false;
     this.drawBar(0);
   }
 
@@ -80,6 +83,7 @@ export class WeaponSystem implements ProjectileSpawner {
     const def = this.def;
     pl.speedMul = 1;
     pl.chargeRatio = 0;
+    pl.aiming = false;
     if (def.mode === 'auto') this.updateAuto(time, def);
     else if (def.mode === 'charge') this.updateCharge(time, def);
     else this.updateMelee(time, def);
@@ -97,6 +101,7 @@ export class WeaponSystem implements ProjectileSpawner {
     this.queuedAt = -1e9;
     const lv = this.level;
     this.nextFire = time + lv.cooldown * 1000;
+    this.player.playAttack(time, lv.cooldown >= BIG_SWING_COOLDOWN_S);
     audio.sfx(def.id === 'tessen' ? 'wind' : 'shuriken');
     const base = Math.atan2(this.player.aim.y, this.player.aim.x);
     this.player.muzzle(this.muzzle);
@@ -136,6 +141,7 @@ export class WeaponSystem implements ProjectileSpawner {
     const ratio = chargeRatio(time - this.chargeStart, fullMs);
     this.player.speedMul = ch.moveMul;
     this.player.chargeRatio = ratio;
+    this.player.aiming = true;
     this.drawBar(ratio);
 
     if (!this.input.attack) {
@@ -159,6 +165,7 @@ export class WeaponSystem implements ProjectileSpawner {
       });
       this.nextFire = time + lv.cooldown * 1000;
       this.cancel();
+      this.player.playAttack(time, true);
     }
   }
 
@@ -168,6 +175,7 @@ export class WeaponSystem implements ProjectileSpawner {
     this.queuedAt = -1e9;
     const pl = this.player;
     pl.muzzle(this.muzzle);
+    pl.playAttack(time, true);
     const angle = Math.atan2(pl.aim.y, pl.aim.x);
     const near = this.enemyInRange(pl.x, pl.y - 16, m.range);
     if (near) {

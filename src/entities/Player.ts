@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/AudioSystem';
 import { PLAYER, DEPTH, TILE } from '../constants';
+import { attackAnimMs, NINJA_SCALE, ninjaAnimKey, ninjaTexture } from '../core/ninjaAnims';
 import { StateMachine } from '../core/StateMachine';
+import type { NinjaAnim } from '../data/ninjaSprites';
 import type { CharacterId, Vec } from '../data/types';
 import type { InputState } from '../systems/InputController';
 
@@ -31,6 +33,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   speedMul = 1;
   /** 0..1, do WeaponSystem đặt; =1 thì nhân vật nhấp nháy báo đã gồng đầy. */
   chargeRatio = 0;
+  /** Đang giương cung (WeaponSystem đặt mỗi frame). */
+  aiming = false;
   /** Vận tốc ngang do băng chuyền (đặt mỗi frame bởi HazardSystem). */
   externalVx = 0;
   invulnUntil = 0;
@@ -48,6 +52,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private hurtUntil = 0;
   private dashDir = 1;
   private tintMode: TintMode = 'none';
+  /** Giữ tư thế ra đòn tới lúc này; `attackBig` = đòn chậm/cận chiến, được đè cả khi chạy/nhảy. */
+  private attackUntil = 0;
+  private attackBig = false;
+  private nextGhost = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -67,7 +75,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.safeX = x;
     this.safeY = y;
 
-    this.view = scene.add.sprite(x, y, `ninja-${id}`).setOrigin(0.5, 1).setDepth(DEPTH.player);
+    this.view = scene.add
+      .sprite(x, y, ninjaTexture(id))
+      .setOrigin(0.5, 1)
+      .setScale(NINJA_SCALE)
+      .setDepth(DEPTH.player);
+    this.view.play(ninjaAnimKey(id, 'idle'));
 
     this.sm = new StateMachine<Player, PState>(this, () => scene.time.now);
     this.sm
@@ -134,6 +147,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return true;
   }
 
+  /**
+   * Phát tư thế ra đòn (WeaponSystem gọi khi bắn/chém). `big`: đòn chậm hoặc cận chiến – hiện cả khi
+   * đang chạy/nhảy; đòn bắn liên thanh thì chỉ hiện lúc đứng yên để chân chạy không bị khựng.
+   */
+  playAttack(time: number, big: boolean): void {
+    this.attackUntil = time + attackAnimMs(this.characterId);
+    this.attackBig = big;
+    const v = this.view;
+    const key = ninjaAnimKey(this.characterId, 'attack');
+    // bắn liên tục: phát lại từ đầu mỗi phát để thấy rõ nhịp ném
+    if (v.anims.currentAnim?.key === key) v.anims.restart();
+  }
+
   update(time: number, delta: number): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
     if (body.blocked.down) this.lastGround = time;
@@ -174,6 +200,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.jumping = false;
     this.speedMul = 1;
     this.chargeRatio = 0;
+    this.aiming = false;
+    this.attackUntil = 0;
     this.invulnUntil = time + iframes;
     this.dropUntil = 0;
     this.sm.set('idle');
@@ -291,33 +319,63 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     else this.view.setTintFill(0xffffff);
   }
 
+  /** Bóng mờ in lại tư thế hiện tại rồi tan dần (vệt lướt). */
+  private spawnGhost(): void {
+    const v = this.view;
+    const g = this.scene.add
+      .image(v.x, v.y, v.texture.key, v.frame.name)
+      .setOrigin(v.originX, v.originY)
+      .setScale(v.scaleX, v.scaleY)
+      .setFlipX(v.flipX)
+      .setTintFill(0xff9a8a)
+      .setAlpha(0.55)
+      .setDepth(DEPTH.player - 1);
+    this.scene.tweens.add({ targets: g, alpha: 0, duration: 220, onComplete: () => g.destroy() });
+  }
+
+  /** Chọn động tác hiển thị theo trạng thái + đòn đánh đang ra. */
+  private pickAnim(time: number): NinjaAnim {
+    const st = this.sm.current;
+    switch (st) {
+      case 'dead':
+        return 'fall';
+      case 'hurt':
+        return 'crouch';
+      case 'dash':
+        return 'dash';
+      case 'prone':
+        return 'crouch';
+    }
+    const attacking = time < this.attackUntil && (this.attackBig || st === 'idle');
+    if (this.aiming && st !== 'jump' && st !== 'fall') return 'aim';
+    if (attacking) return 'attack';
+    if (st === 'jump') return 'jump';
+    if (st === 'fall') return 'fall';
+    return st === 'run' ? 'run' : 'idle';
+  }
+
   private syncView(time: number, delta: number): void {
     const v = this.view;
     const st = this.sm.current;
-    const id = this.characterId;
-    const key =
-      st === 'jump' ? `ninja-${id}-ball` : st === 'prone' ? `ninja-${id}-prone` : `ninja-${id}`;
-    if (v.texture.key !== key) v.setTexture(key);
+    const key = ninjaAnimKey(this.characterId, this.pickAnim(time));
+    if (v.anims.currentAnim?.key !== key) v.play(key);
 
     v.setFlipX(this.facing < 0);
-    v.setScale(1, 1);
-    if (st === 'jump') {
-      v.setOrigin(0.5, 0.5).setPosition(this.x, this.y - 14);
-      v.angle += this.facing * delta * 0.8;
-    } else if (st === 'dead') {
-      v.setOrigin(0.5, 0.5).setPosition(this.x, this.y - 14);
+    if (st === 'dead') {
+      v.setOrigin(0.5, 0.5).setPosition(this.x, this.y - 18);
       v.angle += delta * 0.6;
     } else {
-      v.setOrigin(0.5, 1).setPosition(this.x, this.y);
-      if (st === 'run') v.setAngle(this.facing * 4 + Math.sin(time * 0.03) * 3);
-      else if (st === 'dash') {
-        v.setAngle(this.facing * 14);
-        v.setScale(1.5, 0.9);
-      } else v.setAngle(0);
+      v.setOrigin(0.5, 1).setPosition(this.x, this.y + 1);
+      v.setAngle(0);
+    }
+
+    if (st === 'dash' && time >= this.nextGhost) {
+      this.nextGhost = time + 35;
+      this.spawnGhost();
     }
 
     const blink = time < this.invulnUntil && st !== 'dash' && Math.floor(time / 70) % 2 === 0;
-    v.setAlpha(blink ? 0.35 : st === 'dash' ? 0.8 : 1);
+    v.setAlpha(blink ? 0.35 : st === 'dash' ? 0.85 : 1);
 
     if (st === 'hurt') this.setTintMode('hurt');
     else if (this.chargeRatio >= 1 && Math.floor(time / 80) % 2 === 0) this.setTintMode('white');

@@ -64,10 +64,12 @@ export class CombatSystem {
     const { player, weapons, health, fx } = this.d;
     const physics = this.scene.physics;
     this.boss = boss;
+    // Boss phải đứng TRƯỚC nhóm đạn: với cặp (nhóm, sprite) Phaser tự đảo thứ tự tham số của callback
+    // → `b` thành boss, gọi canHit() trên boss ném lỗi mỗi frame và đứng hình cả màn.
     physics.add.overlap(
-      weapons.bullets,
       boss,
-      (b) => {
+      weapons.bullets,
+      (_boss, b) => {
         const p = b as Projectile;
         boss.hitBy(p.damage, this.scene.time.now);
         fx.burst(p.x, p.y, 0xffe27a, 3);
@@ -75,7 +77,7 @@ export class CombatSystem {
         if (p.behavior === 'slash') fx.hitStop(MELEE_HITSTOP_MS);
         p.onHit(boss);
       },
-      (b) =>
+      (_boss, b) =>
         (b as Projectile).active && boss.active && !boss.dead && (b as Projectile).canHit(boss),
     );
     physics.add.overlap(

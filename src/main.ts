@@ -42,6 +42,9 @@ const game = new Phaser.Game({
 
 game.sound.mute = !save.settings.sound;
 
+// Chỉ khi chạy dev: mở game ra console để gỡ lỗi / kiểm thử tự động (bản build không có dòng này).
+if (import.meta.env.DEV) (window as unknown as { __game: Phaser.Game }).__game = game;
+
 // Nhắc xoay ngang; đang chơi mà xoay dọc thì tự tạm dừng.
 const rotate = document.getElementById('rotate');
 if (rotate) rotate.textContent = t('boot.landscape');

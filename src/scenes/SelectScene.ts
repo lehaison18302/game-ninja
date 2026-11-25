@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { COLORS, GAME_W } from '../constants';
 import { initCamera } from '../core/camera';
+import { NINJA_SCALE, ninjaAnimKey, ninjaTexture } from '../core/ninjaAnims';
 import { run } from '../core/GameState';
 import { CHARACTER_ORDER, characters } from '../data/characters';
 import { skills } from '../data/skills';
@@ -19,12 +20,13 @@ const PREVIEW = { x: 330, y: 182 };
 /** Chọn ninja trước mỗi màn: chỉ số + xem trước cách đánh (đạn bay lặp lại). */
 export class SelectScene extends Phaser.Scene {
   private cards = new Map<CharacterId, Phaser.GameObjects.Rectangle>();
+  private cardNinjas = new Map<CharacterId, Phaser.GameObjects.Sprite>();
   private desc!: Phaser.GameObjects.Text;
   private skillName!: Phaser.GameObjects.Text;
   private skillDesc!: Phaser.GameObjects.Text;
   private statGfx!: Phaser.GameObjects.Graphics;
   private statLabels: Phaser.GameObjects.Text[] = [];
-  private previewNinja!: Phaser.GameObjects.Image;
+  private previewNinja!: Phaser.GameObjects.Sprite;
   private previewTimer?: Phaser.Time.TimerEvent;
 
   constructor() {
@@ -34,6 +36,7 @@ export class SelectScene extends Phaser.Scene {
   create(): void {
     initCamera(this.cameras.main);
     this.cards.clear();
+    this.cardNinjas.clear();
     this.statLabels = [];
     this.add.image(0, 0, 'sky').setOrigin(0, 0);
 
@@ -58,7 +61,14 @@ export class SelectScene extends Phaser.Scene {
         .setInteractive({ useHandCursor: true });
       card.on('pointerup', () => this.choose(id));
       this.cards.set(id, card);
-      this.add.image(x + CARD_W / 2, CARD_Y + 40, `ninja-${id}`).setScale(1.8);
+      const ninja = this.add
+        .sprite(x + CARD_W / 2, CARD_Y + 66, ninjaTexture(id))
+        .setOrigin(0.5, 1)
+        .setScale(NINJA_SCALE * 1.6);
+      ninja.play(ninjaAnimKey(id, 'idle'));
+      // lệch nhịp thở giữa các thẻ cho đỡ đồng loạt
+      ninja.anims.setProgress(i / CHARACTER_ORDER.length);
+      this.cardNinjas.set(id, ninja);
       makeText(this, x + CARD_W / 2, CARD_Y + 74, t(def.nameKey), { origin: 0.5, size: 16 });
       makeText(this, x + CARD_W / 2, CARD_Y + 91, t(weapons[def.weapon].nameKey), {
         origin: 0.5,
@@ -77,7 +87,13 @@ export class SelectScene extends Phaser.Scene {
       stroke: false,
     });
     this.statGfx = this.add.graphics();
-    this.previewNinja = this.add.image(PREVIEW.x - 28, PREVIEW.y, 'ninja-kage');
+    this.previewNinja = this.add
+      .sprite(PREVIEW.x - 28, PREVIEW.y + 18, ninjaTexture('kage'))
+      .setOrigin(0.5, 1)
+      .setScale(NINJA_SCALE);
+    this.previewNinja.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () =>
+      this.previewNinja.play(ninjaAnimKey(run.character, 'idle')),
+    );
 
     makeButton(this, GAME_W - 70, 250, 120, 28, t('select.go'), () => this.start(), { size: 18 });
     this.choose(run.character);
@@ -100,7 +116,12 @@ export class SelectScene extends Phaser.Scene {
     const skill = skills[def.skill];
     this.skillName.setText(`${t('select.skill')}: ${t(skill.nameKey)}`);
     this.skillDesc.setText(t(skill.descKey));
-    this.previewNinja.setTexture(`ninja-${id}`);
+    this.previewNinja.play(ninjaAnimKey(id, 'idle'));
+    // thẻ đang chọn chạy tại chỗ, các thẻ khác đứng thở
+    for (const [cid, n] of this.cardNinjas) {
+      const key = ninjaAnimKey(cid, cid === id ? 'run' : 'idle');
+      if (n.anims.currentAnim?.key !== key) n.play(key);
+    }
 
     this.statGfx.clear();
     for (const l of this.statLabels) l.destroy();
@@ -144,6 +165,7 @@ export class SelectScene extends Phaser.Scene {
     const def = weapons[characters[run.character].weapon];
     const lv = def.levels[run.weaponLevel - 1];
     const n = def.mode === 'melee' ? 1 : lv.count;
+    this.previewNinja.play(ninjaAnimKey(run.character, 'attack'));
     const dur = def.mode === 'melee' ? 350 : Math.min(900, def.range * 2.2);
     for (let i = 0; i < n; i++) {
       const off = (i - (n - 1) / 2) * lv.spread;
