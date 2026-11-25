@@ -2,7 +2,10 @@ import type { TextKey } from '../text/vi';
 
 export type CharacterId = 'kage' | 'fuuka' | 'hayate' | 'ren';
 export type WeaponId = 'shuriken' | 'tessen' | 'yumi' | 'tanto';
-export type ProjectileBehavior = 'straight' | 'wind' | 'arrow' | 'kunai' | 'slash' | 'blast';
+export type ProjectileBehavior =
+  'straight' | 'wind' | 'arrow' | 'kunai' | 'slash' | 'blast' | 'tornado';
+/** Chiêu riêng của từng ninja (nút C / phím L). */
+export type SkillId = 'shurikenStorm' | 'whirlwind' | 'arrowRain' | 'shadowDash';
 export type FireMode = 'auto' | 'charge' | 'melee';
 
 export interface WeaponLevel {
@@ -64,10 +67,18 @@ export interface CharacterDef {
   descKey: TextKey;
   weapon: WeaponId;
   color: number;
-  /** Kỹ năng nút C: lướt hoặc dùng vật phẩm (bom khói). */
-  skill: 'dash' | 'item';
+  /** Chiêu riêng ở nút C / phím L (thông số trong skills.ts). */
+  skill: SkillId;
   /** Thang 1–5 hiển thị ở màn Chọn ninja. */
   stats: { range: number; damage: number; speed: number; pierce: boolean };
+}
+
+export interface SkillDef {
+  id: SkillId;
+  nameKey: TextKey;
+  descKey: TextKey;
+  /** Thời gian hồi chiêu (ms). */
+  cooldownMs: number;
 }
 
 export interface Vec {

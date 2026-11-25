@@ -37,6 +37,7 @@ export const vi = {
   'select.yes': 'Có',
   'select.no': 'Không',
   'select.hint': 'Chạm vào ninja để chọn',
+  'select.skill': 'Chiêu',
 
   'victory.title': 'Chiến thắng!',
   'victory.sub': 'Bóng tối đã tan. Phong Ảnh trở lại.',
@@ -51,9 +52,16 @@ export const vi = {
   'stage.2': 'Màn 2: Làng chài bị chiếm',
   'stage.3': 'Màn 3: Pháo đài núi lửa',
 
-  'touch.attack': 'Đánh',
-  'touch.jump': 'Nhảy',
-  'touch.skill': 'Kỹ năng',
+  'hud.skill': 'Chiêu',
+
+  'skill.shurikenStorm': 'Bão phi tiêu',
+  'skill.shurikenStorm.desc': 'Tung vòng phi tiêu ra mọi hướng, phá đạn.',
+  'skill.whirlwind': 'Lốc xoáy',
+  'skill.whirlwind.desc': 'Thổi tan đạn quanh mình, tạo lốc cuốn địch.',
+  'skill.arrowRain': 'Mưa tên',
+  'skill.arrowRain.desc': 'Trút mưa tên xuyên giáp xuống phía trước.',
+  'skill.shadowDash': 'Ảnh trảm',
+  'skill.shadowDash.desc': 'Lướt chém xuyên qua địch, phản đạn.',
 
   'char.kage': 'Kage',
   'char.fuuka': 'Fuuka',
@@ -62,7 +70,7 @@ export const vi = {
   'char.kage.desc': 'Cân bằng, dễ chơi. Phi tiêu bay nhanh, tỏa hình quạt.',
   'char.fuuka.desc': 'Khống chế đám đông. Gió xuyên địch, chặn đạn.',
   'char.hayate.desc': 'Tầm xa. Giữ nút đánh để gồng tên xuyên giáp.',
-  'char.ren.desc': 'Cận chiến. Chém phản đạn, lướt né.',
+  'char.ren.desc': 'Cận chiến. Chém đoản đao phản đạn, xa thì ném kunai.',
 
   'weapon.shuriken': 'Phi tiêu',
   'weapon.tessen': 'Quạt chiến',

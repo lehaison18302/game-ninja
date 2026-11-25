@@ -82,6 +82,15 @@ export const behaviors: Record<ProjectileBehavior, Behavior> = {
     },
   },
 
+  // lốc xoáy (chiêu Fuuka): lật qua lại cho cảm giác xoáy, tan dần ở cuối
+  tornado: {
+    update(p) {
+      const t = p.age / p.life;
+      p.setFlipX(Math.floor(p.age / 90) % 2 === 1);
+      p.setAlpha(t > 0.8 ? (1 - t) / 0.2 : 0.95);
+    },
+  },
+
   // vụ nổ nhỏ
   blast: {
     update(p) {

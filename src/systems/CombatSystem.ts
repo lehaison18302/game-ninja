@@ -104,6 +104,19 @@ export class CombatSystem {
     if (b && b.active && !b.dead) b.hitBy(SMOKE_BOSS_DAMAGE, now);
   }
 
+  /** Thổi tan đạn địch trong bán kính `r` quanh (x, y) (chiêu Lốc xoáy). */
+  clearBulletsNear(x: number, y: number, r: number): void {
+    const r2 = r * r;
+    for (const b of this.enemyBullets.getChildren() as Projectile[]) {
+      if (!b.active) continue;
+      const dx = b.x - x;
+      const dy = b.y - y;
+      if (dx * dx + dy * dy > r2) continue;
+      this.d.fx.burst(b.x, b.y, 0xbfeaff, 4);
+      b.kill();
+    }
+  }
+
   /** Xoá toàn bộ đạn địch đang bay (khi vào/ra trận boss, bom khói). */
   clearBullets(): void {
     for (const b of this.enemyBullets.getChildren() as Projectile[]) if (b.active) b.kill();

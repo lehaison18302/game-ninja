@@ -10,6 +10,7 @@ export type SfxKey =
   | 'kunai'
   | 'slash'
   | 'dash'
+  | 'skill'
   | 'hit'
   | 'explode'
   | 'hurt'
@@ -35,6 +36,7 @@ const SFX: Record<SfxKey, SfxDef> = {
   kunai: { wave: 'square', f0: 760, f1: 360, dur: 0.08, vol: 0.14, duty: 0.25 },
   slash: { wave: 'noise', f0: 2400, f1: 500, dur: 0.14, vol: 0.28 },
   dash: { wave: 'noise', f0: 900, f1: 200, dur: 0.16, vol: 0.2 },
+  skill: { wave: 'square', f0: 260, f1: 1040, dur: 0.22, vol: 0.18, duty: 0.25, vib: [14, 0.04] },
   hit: { wave: 'square', f0: 340, f1: 150, dur: 0.07, vol: 0.14, duty: 0.5 },
   explode: { wave: 'noise', f0: 260, f1: 40, dur: 0.32, vol: 0.34 },
   hurt: { wave: 'saw', f0: 420, f1: 80, dur: 0.3, vol: 0.28 },

@@ -1,8 +1,7 @@
 import Phaser from 'phaser';
 import { audio } from '../audio/AudioSystem';
-import { EVT, PLAYER, DEPTH, TILE } from '../constants';
+import { PLAYER, DEPTH, TILE } from '../constants';
 import { StateMachine } from '../core/StateMachine';
-import { characters } from '../data/characters';
 import type { CharacterId, Vec } from '../data/types';
 import type { InputState } from '../systems/InputController';
 
@@ -15,7 +14,7 @@ export interface Terrain {
 
 const HURT_STUN_MS = 300;
 const SAFE_CHECK_MS = 120;
-const DASH_SPEED = PLAYER.dashDistance / (PLAYER.dashMs / 1000);
+export const DASH_SPEED = PLAYER.dashDistance / (PLAYER.dashMs / 1000);
 
 type TintMode = 'none' | 'hurt' | 'white';
 
@@ -36,19 +35,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   externalVx = 0;
   invulnUntil = 0;
   dropUntil = 0;
-  dashReadyAt = 0;
   safeX: number;
   safeY: number;
   readonly characterId: CharacterId;
 
   private jumping = false;
+  private jumpAt = 0;
+  private jumpCut = false;
   private lastGround = -1e9;
   private lastJumpPress = -1e9;
   private lastSafeCheck = 0;
   private hurtUntil = 0;
   private dashDir = 1;
   private tintMode: TintMode = 'none';
-  private lastCdEmit = -1;
 
   constructor(
     scene: Phaser.Scene,
@@ -118,10 +117,21 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return out;
   }
 
-  /** 0 = sẵn sàng … 1 = vừa dùng (nút kỹ năng). */
-  skillCooldownRatio(time: number): number {
-    if (characters[this.characterId].skill !== 'dash') return 0;
-    return Phaser.Math.Clamp((this.dashReadyAt - time) / PLAYER.dashCooldownMs, 0, 1);
+  /** Có đang tự điều khiển được không (không lướt, không bị đánh bật, không chết). */
+  get inControl(): boolean {
+    const st = this.sm.current;
+    return st === 'idle' || st === 'run' || st === 'jump' || st === 'fall' || st === 'prone';
+  }
+
+  /** Lướt ngắn có bất tử (chiêu của Ren). Trả về false nếu lúc này không lướt được. */
+  startDash(time: number): boolean {
+    if (!this.inControl) return false;
+    this.dashDir = this.in_.dirX !== 0 ? this.in_.dirX : this.facing;
+    this.facing = this.dashDir;
+    this.jumping = false;
+    this.invulnUntil = Math.max(this.invulnUntil, time + PLAYER.dashMs + 100);
+    this.sm.set('dash');
+    return true;
   }
 
   update(time: number, delta: number): void {
@@ -131,19 +141,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (!this.dead) this.updateAim(body.blocked.down);
 
-    const st = this.sm.current;
-    if (st === 'idle' || st === 'run' || st === 'jump' || st === 'fall' || st === 'prone') {
-      this.control(time);
-    }
+    if (this.inControl) this.control(time);
     this.sm.update(time, delta);
     this.trackSafeSpot(time, body);
     this.syncView(time, delta);
-
-    const cd = Math.round(this.skillCooldownRatio(time) * 50);
-    if (cd !== this.lastCdEmit) {
-      this.lastCdEmit = cd;
-      this.scene.events.emit(EVT.skillCooldown, cd / 50);
-    }
   }
 
   /** Nhận đòn: đẩy lùi + bất tử tạm. Việc trừ tim do HealthSystem quyết định. */
@@ -205,21 +206,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const onGround = body.blocked.down;
     if (onGround) this.jumping = false;
 
-    if (
-      s.skillPressed &&
-      characters[this.characterId].skill === 'dash' &&
-      time >= this.dashReadyAt
-    ) {
-      this.dashDir = s.dirX !== 0 ? s.dirX : this.facing;
-      this.facing = this.dashDir;
-      this.dashReadyAt = time + PLAYER.dashCooldownMs;
-      this.invulnUntil = Math.max(this.invulnUntil, time + PLAYER.dashMs + 100);
-      audio.sfx('dash');
-      this.sm.set('dash');
-      return;
-    }
-
-    // nhảy / xuyên sàn (có đệm phím + "coyote time")
+    // nhảy / xuyên sàn (có đệm phím + "coyote time").
+    // Chỉ xuyên sàn khi giữ xuống trên sàn mỏng; trên đất đặc thì giữ xuống (ngón cái trĩu xuống) vẫn nhảy.
     let left = false;
     if (
       time - this.lastJumpPress <= PLAYER.jumpBufferMs &&
@@ -228,21 +216,28 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       if (s.dirY > 0 && onGround && this.standingOnPlatform(body)) {
         this.dropUntil = time + PLAYER.dropThroughMs;
         this.setVelocityY(40);
-        left = true;
-      } else if (!(s.dirY > 0 && onGround)) {
+      } else {
         this.setVelocityY(-PLAYER.jumpSpeed);
         this.jumping = true;
+        this.jumpAt = time;
+        this.jumpCut = false;
         audio.sfx('jump');
-        left = true;
       }
-      if (left) {
-        this.lastJumpPress = -1e9;
-        this.lastGround = -1e9;
-      }
+      left = true;
+      this.lastJumpPress = -1e9;
+      this.lastGround = -1e9;
     }
-    // nhả nút sớm → nhảy thấp
-    if (this.jumping && s.jumpReleased && body.velocity.y < -110)
-      this.setVelocityY(body.velocity.y * 0.5);
+    // nhả nút sớm → nhảy thấp (cắt một lần, sau thời gian bay tối thiểu)
+    if (
+      this.jumping &&
+      !this.jumpCut &&
+      !s.jump &&
+      time - this.jumpAt >= PLAYER.shortHopMinMs &&
+      body.velocity.y < -110
+    ) {
+      this.setVelocityY(body.velocity.y * PLAYER.shortHopMul);
+      this.jumpCut = true;
+    }
 
     const prone = onGround && s.dirY > 0 && s.dirX === 0;
     const runV = PLAYER.runSpeed * this.speedMul;

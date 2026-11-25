@@ -3,6 +3,7 @@ import { COLORS, DEPTH, EVT, GAME_W, PLAYER } from '../constants';
 import { initCamera } from '../core/camera';
 import { run } from '../core/GameState';
 import { characters } from '../data/characters';
+import { skills } from '../data/skills';
 import { weapons } from '../data/weapons';
 import { TouchControls } from '../systems/TouchControls';
 import { t } from '../text/t';
@@ -24,7 +25,8 @@ export class UIScene extends Phaser.Scene {
   private sub!: Phaser.GameObjects.Text;
   private intro!: Phaser.GameObjects.Text;
   private itemText!: Phaser.GameObjects.Text;
-  private smokeText!: Phaser.GameObjects.Text;
+  private skillText!: Phaser.GameObjects.Text;
+  private skillReady = true;
   private shieldIcon!: Phaser.GameObjects.Image;
   private touch?: TouchControls;
   private game_!: Phaser.Scene;
@@ -73,7 +75,12 @@ export class UIScene extends Phaser.Scene {
       origin: 0.5,
       color: COLORS.textGold,
     }).setVisible(false);
-    this.smokeText = makeText(this, 8, 40, '', { size: 14, color: COLORS.text }).setVisible(false);
+    const skill = skills[characters[run.character].skill];
+    this.skillReady = true;
+    this.skillText = makeText(this, 8, 40, `${t('hud.skill')}: ${t(skill.nameKey)}`, {
+      size: 14,
+      color: COLORS.textGold,
+    });
     this.shieldIcon = this.add
       .image(8 + PLAYER.hearts * 18 + 36, 8, 'item-shield')
       .setOrigin(0, 0)
@@ -95,7 +102,6 @@ export class UIScene extends Phaser.Scene {
     ev.on(EVT.stageClear, this.showClear, this);
     ev.on(EVT.skillCooldown, this.setSkillCd, this);
     ev.on(EVT.pickupTaken, this.showItem, this);
-    ev.on(EVT.smokeChanged, this.setSmoke, this);
     ev.on(EVT.shieldChanged, this.setShield, this);
     const onResume = (): void => this.touch?.reset();
     this.events.on(Phaser.Scenes.Events.RESUME, onResume);
@@ -111,7 +117,6 @@ export class UIScene extends Phaser.Scene {
       ev.off(EVT.stageClear, this.showClear, this);
       ev.off(EVT.skillCooldown, this.setSkillCd, this);
       ev.off(EVT.pickupTaken, this.showItem, this);
-      ev.off(EVT.smokeChanged, this.setSmoke, this);
       ev.off(EVT.shieldChanged, this.setShield, this);
     });
 
@@ -226,15 +231,15 @@ export class UIScene extends Phaser.Scene {
     });
   }
 
-  private setSmoke(n: number): void {
-    this.smokeText.setText(`${t('item.smoke')} ×${n}`).setVisible(n > 0);
-  }
-
   private setShield(on: boolean): void {
     this.shieldIcon.setVisible(on);
   }
 
   private setSkillCd(ratio: number): void {
     this.touch?.setSkillCooldown(ratio);
+    const ready = ratio <= 0;
+    if (ready === this.skillReady) return;
+    this.skillReady = ready;
+    this.skillText.setColor(ready ? COLORS.textGold : COLORS.textDim);
   }
 }

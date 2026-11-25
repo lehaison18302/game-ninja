@@ -79,6 +79,17 @@ export function makePlaceholderTextures(scene: Phaser.Scene): void {
     g.lineStyle(5, 0xffffff, 1).beginPath().arc(8, 16, 26, -0.9, 0.9, false).strokePath();
     g.lineStyle(2, 0xff9a8a, 1).beginPath().arc(8, 16, 22, -0.8, 0.8, false).strokePath();
   });
+  tex('p-tornado', 20, 28, () => {
+    for (let i = 0; i < 6; i++) {
+      const w = 18 - i * 2.6;
+      g.lineStyle(2, i % 2 ? 0xbfeaff : 0xffffff, 0.95).strokeEllipse(
+        10 + (i % 2),
+        3 + i * 4.4,
+        w,
+        4.5,
+      );
+    }
+  });
   tex('p-blast', 32, 32, () => {
     g.fillStyle(0xffb02e, 0.9).fillCircle(16, 16, 15);
     g.fillStyle(0xfff2a0, 1).fillCircle(16, 16, 9);

@@ -13,21 +13,17 @@ import type { StageTerrain } from './TerrainBuilder';
 
 const POOL_SIZE = 8;
 const FULL_BONUS = 300;
-const SMOKE_CAP = 1;
 
 /** Rơi/nhặt vật phẩm: cuộn nâng cấp, cơm nắm, khiên Ki, bom khói. */
 export class PickupSystem {
   readonly group: Phaser.Physics.Arcade.Group;
-  /** Số bom khói đang giữ (dùng bằng nút kỹ năng). */
-  smoke = 0;
 
   constructor(
     private scene: Phaser.Scene,
     player: Player,
     private health: HealthSystem,
     private fx: Effects,
-    /** Ninja có kỹ năng riêng ở nút C (Ren) thì bom khói được dùng ngay khi nhặt. */
-    private autoSmoke: () => boolean,
+    /** Bom khói nổ ngay khi nhặt (nút C dành cho chiêu riêng của ninja). */
     private useSmoke: () => void,
     terrain: StageTerrain,
   ) {
@@ -58,15 +54,6 @@ export class PickupSystem {
     for (const p of this.group.getChildren() as Pickup[]) if (p.active) p.tick(delta);
   }
 
-  /** Dùng bom khói đang giữ (nếu có). */
-  trySmoke(): boolean {
-    if (this.smoke <= 0) return false;
-    this.smoke--;
-    this.scene.events.emit(EVT.smokeChanged, this.smoke);
-    this.useSmoke();
-    return true;
-  }
-
   private onEnemyKilled(e: Enemy): void {
     if (!e.drop) return;
     const p = this.group.get(e.x, e.y, 'px') as Pickup | null;
@@ -93,11 +80,7 @@ export class PickupSystem {
         this.health.setShield(true);
         break;
       case 'smoke':
-        if (this.autoSmoke()) this.useSmoke();
-        else {
-          this.smoke = Math.min(SMOKE_CAP, this.smoke + 1);
-          this.scene.events.emit(EVT.smokeChanged, this.smoke);
-        }
+        this.useSmoke();
         break;
     }
   }

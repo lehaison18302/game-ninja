@@ -12,7 +12,7 @@ npm run lint
 npm run build      # kiểm tra kiểu + đóng gói PWA vào dist/
 ```
 
-Phím trên PC: mũi tên/WASD di chuyển + ngắm 8 hướng, `J` đánh, `K` nhảy, `L` kỹ năng, `P`/`Esc` tạm dừng.
+Phím trên PC: mũi tên/WASD di chuyển + ngắm 8 hướng, `J` đánh, `K` nhảy, `L` chiêu riêng, `P`/`Esc` tạm dừng.
 Xuống + `K` khi đứng trên sàn mỏng = nhảy xuyên sàn.
 
 ## Sinh lại asset tạm
@@ -27,5 +27,5 @@ sàn sập, thuyền, băng chuyền, cột lửa) đọc trực tiếp từ fil
 - Hình tạm sinh bằng code trong `src/core/placeholderTextures.ts` và `placeholderStages.ts`
   (tên texture: `ninja-<id>`, `enemy-*`, `boss-*`, `p-*`, `e-*`, `item-*`, `bg*`…). Nạp spritesheet cùng tên là thay được.
 - Âm thanh được tổng hợp bằng code (`src/audio/`), chỉnh thông số trong `AudioSystem.ts`.
-- Cân bằng: `src/data/` (`weapons.ts`, `enemies.ts`, `bosses.ts`, `characters.ts`) và `src/constants.ts` (`PLAYER`, `POOL`).
+- Cân bằng: `src/data/` (`weapons.ts`, `skills.ts`, `enemies.ts`, `bosses.ts`, `characters.ts`) và `src/constants.ts` (`PLAYER`, `POOL`).
 - Chữ hiển thị: duy nhất `src/text/vi.ts`.

@@ -46,7 +46,6 @@ export const EVT = {
   gameOver: 'game-over',
   enemyKilled: 'enemy-killed',
   pickupTaken: 'pickup-taken',
-  smokeChanged: 'smoke-changed',
   shieldChanged: 'shield-changed',
   skillCooldown: 'skill-cooldown',
   pauseRequest: 'pause-request',
@@ -58,8 +57,12 @@ export const PLAYER = {
   runSpeed: 90,
   jumpSpeed: 300,
   gravity: 900,
-  coyoteMs: 80,
-  jumpBufferMs: 100,
+  coyoteMs: 100,
+  jumpBufferMs: 120,
+  /** Nhả nút nhảy sớm thì nhảy thấp, nhưng luôn bay lên ít nhất ngần này ms (chạm nhanh trên cảm ứng vẫn đủ cao). */
+  shortHopMinMs: 150,
+  /** Hệ số vận tốc khi cắt cú nhảy thấp. */
+  shortHopMul: 0.6,
   dropThroughMs: 250,
   bodyW: 12,
   bodyH: 28,
@@ -73,11 +76,10 @@ export const PLAYER = {
   hitStopMs: 50,
   dashDistance: 120,
   dashMs: 150,
-  dashCooldownMs: 800,
 } as const;
 
 export const POOL = {
-  playerBullets: 64,
+  playerBullets: 96,
   enemyBullets: 48,
   enemies: 24,
   particles: 96,

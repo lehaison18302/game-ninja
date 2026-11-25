@@ -9,7 +9,7 @@ export const characters: Record<CharacterId, CharacterDef> = {
     descKey: 'char.kage.desc',
     weapon: 'shuriken',
     color: 0x3a8dff,
-    skill: 'item',
+    skill: 'shurikenStorm',
     stats: { range: 4, damage: 2, speed: 5, pierce: false },
   },
   fuuka: {
@@ -18,7 +18,7 @@ export const characters: Record<CharacterId, CharacterDef> = {
     descKey: 'char.fuuka.desc',
     weapon: 'tessen',
     color: 0xff7fa8,
-    skill: 'item',
+    skill: 'whirlwind',
     stats: { range: 3, damage: 3, speed: 2, pierce: true },
   },
   hayate: {
@@ -27,7 +27,7 @@ export const characters: Record<CharacterId, CharacterDef> = {
     descKey: 'char.hayate.desc',
     weapon: 'yumi',
     color: 0x4ccf5a,
-    skill: 'item',
+    skill: 'arrowRain',
     stats: { range: 5, damage: 4, speed: 2, pierce: true },
   },
   ren: {
@@ -36,7 +36,7 @@ export const characters: Record<CharacterId, CharacterDef> = {
     descKey: 'char.ren.desc',
     weapon: 'tanto',
     color: 0xe0382a,
-    skill: 'dash',
+    skill: 'shadowDash',
     stats: { range: 1, damage: 5, speed: 4, pierce: false },
   },
 };

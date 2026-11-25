@@ -31,6 +31,10 @@ export interface LaunchCfg {
   /** Trọng lực riêng (đạn ném). */
   gravity?: number;
   hostile?: boolean;
+  /** Bay xuyên đất đặc (lốc xoáy). */
+  passWalls?: boolean;
+  /** >0: cứ sau ngần này ms lại được đánh trúng cùng mục tiêu lần nữa (đòn kéo dài). */
+  rehitMs?: number;
 }
 
 export interface ProjectileSpawner {
@@ -45,6 +49,7 @@ const HIT_SIZE: Record<string, [number, number]> = {
   'p-kunai': [8, 8],
   'p-slash': [36, 30],
   'p-blast': [30, 30],
+  'p-tornado': [16, 26],
   'e-arrow': [8, 4],
   'e-shuriken': [6, 6],
   'e-bolt': [7, 4],
@@ -65,6 +70,9 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
   split = false;
   explode = false;
   hostile = false;
+  passWalls = false;
+  rehitMs = 0;
+  private nextRehit = 0;
   behavior: ProjectileBehavior = 'straight';
   owner: ProjectileSpawner | null = null;
   readonly hit = new Set<object>();
@@ -96,6 +104,7 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
     this.baseScale = c.scale ?? 1;
     this.setScale(this.baseScale);
     this.setRotation(c.angle);
+    this.setFlip(false, false);
     this.setDepth(DEPTH.projectile);
 
     this.damage = c.damage;
@@ -107,6 +116,9 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
     this.split = c.split ?? false;
     this.explode = c.explode ?? false;
     this.hostile = c.hostile ?? false;
+    this.passWalls = c.passWalls ?? false;
+    this.rehitMs = c.rehitMs ?? 0;
+    this.nextRehit = this.rehitMs;
     this.behavior = c.behavior;
     this.grow = c.grow ?? 1;
     this.weave = c.weave ?? 0;
@@ -152,6 +164,10 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
     if (this.age >= this.life) {
       this.kill();
       return;
+    }
+    if (this.rehitMs > 0 && this.age >= this.nextRehit) {
+      this.hit.clear();
+      this.nextRehit = this.age + this.rehitMs;
     }
     behaviors[this.behavior].update?.(this, delta);
     const view = this.scene.cameras.main.worldView;

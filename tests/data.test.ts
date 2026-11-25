@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { bosses } from '../src/data/bosses';
 import { CHARACTER_ORDER, characters } from '../src/data/characters';
 import { enemies } from '../src/data/enemies';
+import { skills } from '../src/data/skills';
 import { weapons } from '../src/data/weapons';
 import { vi } from '../src/text/vi';
 
@@ -32,8 +33,20 @@ describe('luật thiết kế (PLAN)', () => {
     for (const w of used) expect(weapons[w]).toBeDefined();
   });
 
-  it('chỉ Ren có kỹ năng lướt', () => {
-    expect(CHARACTER_ORDER.filter((id) => characters[id].skill === 'dash')).toEqual(['ren']);
+  it('mỗi ninja một chiêu riêng, có hồi chiêu và tên/mô tả tiếng Việt', () => {
+    const used = new Set(CHARACTER_ORDER.map((id) => characters[id].skill));
+    expect(used.size).toBe(CHARACTER_ORDER.length);
+    for (const id of used) {
+      const s = skills[id];
+      expect(s.id).toBe(id);
+      expect(s.cooldownMs).toBeGreaterThan(0);
+      expect(vi[s.nameKey]).toBeTruthy();
+      expect(vi[s.descKey]).toBeTruthy();
+    }
+  });
+
+  it('chỉ Ren có chiêu lướt', () => {
+    expect(CHARACTER_ORDER.filter((id) => characters[id].skill === 'shadowDash')).toEqual(['ren']);
   });
 
   it('chữ tiếng Việt có dấu và tên nhân vật/vũ khí/boss đều có trong bảng chữ', () => {

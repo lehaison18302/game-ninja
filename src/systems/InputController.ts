@@ -16,6 +16,8 @@ export interface InputState {
   pausePressed: boolean;
 }
 
+export type TouchButton = 'attack' | 'jump' | 'skill';
+
 /** Cầu nối từ TouchControls (UIScene) sang InputController (GameScene). */
 export const touchInput = {
   dirX: 0,
@@ -23,8 +25,21 @@ export const touchInput = {
   attack: false,
   jump: false,
   skill: false,
-  pause: false,
+  /**
+   * Đếm số lần chạm xuống từng nút. Chạm + nhả trong cùng một khung hình (chạm rất nhanh, máy giật)
+   * vẫn được tính là một lần bấm thay vì bị mất.
+   */
+  taps: { attack: 0, jump: 0, skill: 0 },
 };
+
+export function pressTouchButton(id: TouchButton): void {
+  touchInput[id] = true;
+  touchInput.taps[id]++;
+}
+
+export function releaseTouchButton(id: TouchButton): void {
+  touchInput[id] = false;
+}
 
 export function resetTouchInput(): void {
   touchInput.dirX = 0;
@@ -32,7 +47,6 @@ export function resetTouchInput(): void {
   touchInput.attack = false;
   touchInput.jump = false;
   touchInput.skill = false;
-  touchInput.pause = false;
 }
 
 const STICK_DEADZONE = 0.45;
@@ -72,6 +86,8 @@ export class InputController {
   private prevJump = false;
   private prevSkill = false;
   private prevPause = false;
+  /** Số lần chạm đã xử lý (so với touchInput.taps để bắt cú chạm quá nhanh). */
+  private seenTaps = { ...touchInput.taps };
 
   constructor(private scene: Phaser.Scene) {
     const kb = scene.input.keyboard;
@@ -100,10 +116,19 @@ export class InputController {
     const s = this.state;
     let dx = 0;
     let dy = 0;
-    let attack = touchInput.attack;
-    let jump = touchInput.jump;
-    let skill = touchInput.skill;
-    let pause = touchInput.pause;
+    const taps = touchInput.taps;
+    const seen = this.seenTaps;
+    const tapAttack = taps.attack !== seen.attack;
+    const tapJump = taps.jump !== seen.jump;
+    const tapSkill = taps.skill !== seen.skill;
+    seen.attack = taps.attack;
+    seen.jump = taps.jump;
+    seen.skill = taps.skill;
+
+    let attack = touchInput.attack || tapAttack;
+    let jump = touchInput.jump || tapJump;
+    let skill = touchInput.skill || tapSkill;
+    let pause = false;
 
     const k = this.keys;
     if (k) {
@@ -137,13 +162,13 @@ export class InputController {
     s.dirY = Phaser.Math.Clamp(dy, -1, 1);
 
     s.attack = attack;
-    s.attackPressed = attack && !this.prevAttack;
+    s.attackPressed = (attack && !this.prevAttack) || tapAttack;
     s.attackReleased = !attack && this.prevAttack;
     s.jump = jump;
-    s.jumpPressed = jump && !this.prevJump;
+    s.jumpPressed = (jump && !this.prevJump) || tapJump;
     s.jumpReleased = !jump && this.prevJump;
     s.skill = skill;
-    s.skillPressed = skill && !this.prevSkill;
+    s.skillPressed = (skill && !this.prevSkill) || tapSkill;
     s.pausePressed = pause && !this.prevPause;
 
     this.prevAttack = attack;
@@ -155,6 +180,7 @@ export class InputController {
   /** Xoá cạnh bấm/nhả (dùng khi tiếp tục sau tạm dừng để không bị "nhả" giả). */
   reset(): void {
     this.prevAttack = this.prevJump = this.prevSkill = this.prevPause = false;
+    Object.assign(this.seenTaps, touchInput.taps);
     const s = this.state;
     s.dirX = s.dirY = 0;
     s.attack = s.jump = s.skill = false;

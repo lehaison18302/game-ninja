@@ -81,7 +81,7 @@ Vật phẩm bay ngang màn hình, bắn rơi để nhặt:
 - `Cuộn nâng cấp` – tăng cấp vũ khí (Lv1 → Lv3).
 - `Cơm nắm` – hồi 1 tim (tối đa 3).
 - `Khiên Ki` – chặn 1 đòn mà không mất tim.
-- `Bom khói` – xóa toàn bộ đạn địch trên màn hình + gây sát thương nhẹ.
+- `Bom khói` – nổ ngay khi nhặt: xóa toàn bộ đạn địch trên màn hình + gây sát thương nhẹ.
 
 ### 3.4. Điểm số
 - Điểm số + bảng xếp hạng lưu trong máy (localStorage).
@@ -128,6 +128,17 @@ Tên ninja giữ kiểu Nhật cho hợp chủ đề, còn tên vũ khí, kỹ n
 | Ren (kunai/đao) | Gần | Rất cao | Nhanh | — | Phản đạn, lướt |
 
 > Toàn bộ chỉ số nằm trong `src/data/weapons.ts` để cân bằng mà không sửa code lõi.
+
+### 4.6. Chiêu riêng (nút C / phím `L`)
+Mỗi ninja có một chiêu đặc trưng, có thời gian hồi (vòng tối trên nút C, nút nháy sáng khi hồi xong).
+Thông số nằm trong `src/data/skills.ts`.
+
+| Nhân vật | Chiêu | Tác dụng | Hồi chiêu |
+|---|---|---|---|
+| Kage | **Bão phi tiêu** | 2 vòng phi tiêu tỏa ra mọi hướng, phá đạn địch | 6 giây |
+| Fuuka | **Lốc xoáy** | Thổi tan đạn quanh mình, thả lốc trôi chậm về trước, cuốn + đánh nhiều lần | 7 giây |
+| Hayate | **Mưa tên** | Mưa tên xuyên giáp rơi chéo xuống vùng phía trước | 6.5 giây |
+| Ren | **Ảnh trảm** | Lướt bất tử kèm đường chém xuyên địch, phản đạn | 0.8 giây |
 
 ---
 
@@ -186,13 +197,16 @@ Intro → Advancing (cuộn màn) → BossWarning → BossFight → StageClear
 │   │  ●  │  joystick ảo                (A)     (C)        │
 │   ╰─────╯  (8 hướng)                                     │
 └──────────────────────────────────────────────────────────┘
- A = Tấn công (giữ để đánh liên tục / gồng)   B = Nhảy   C = Kỹ năng (lướt / bom khói)
+ A = Tấn công (giữ để đánh liên tục / gồng)   B = Nhảy   C = Chiêu riêng của ninja
 ```
 - **HUD:** tim (♥ còn / ♡ mất), số mạng, tên vũ khí + cấp, điểm, nút tạm dừng. Chữ trên HUD là tiếng Việt.
-- **Joystick ảo động** (rex VirtualJoystick, chế độ 8 hướng): chạm chỗ nào ở nửa trái màn hình thì joystick hiện ở đó.
-- **Đa chạm:** bật `input.addPointer(3)` để vừa di chuyển vừa nhảy vừa đánh.
+- **Joystick ảo động** (8 hướng, tự viết trong `TouchControls.ts`): chạm chỗ nào ở nửa trái màn hình (kể cả viền đen
+  hai bên trên máy màn dài) thì joystick hiện ở đó; nền bám theo ngón nên quay đầu chỉ cần kéo ngược một đoạn ngắn;
+  có vùng chết + độ trễ ở ranh giới hướng để không rung qua lại.
+- **Cụm nút:** chạm lệch mép nút vẫn ăn nút gần nhất, trượt ngón từ nút này sang nút kia được, chạm cực nhanh không bị mất.
+- **Đa chạm:** đọc thẳng sự kiện chạm của trình duyệt, mỗi ngón gắn với một điều khiển theo `touch.identifier`.
 - Nút trong suốt 40%, kích thước ≥ 64px, có tùy chọn chỉnh vị trí/kích thước.
-- **Bàn phím** (test trên PC): mũi tên / WASD – di chuyển, `J` tấn công, `K` nhảy, `L` kỹ năng, `P` tạm dừng.
+- **Bàn phím** (test trên PC): mũi tên / WASD – di chuyển, `J` tấn công, `K` nhảy, `L` chiêu, `P` tạm dừng.
 - **Tay cầm (gamepad):** hỗ trợ sẵn nhờ Phaser, gần như không tốn thêm code.
 - Tự động tạm dừng khi ứng dụng mất focus/chạy nền.
 

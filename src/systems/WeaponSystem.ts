@@ -11,6 +11,8 @@ import type { Player } from '../entities/Player';
 import type { InputState } from './InputController';
 
 const BAR_W = 22;
+/** Chạm nút đánh lúc vũ khí còn đang hồi thì vẫn ra đòn ngay khi hồi xong (nếu trong khoảng này). */
+const ATTACK_BUFFER_MS = 250;
 
 /** Ra đòn theo dữ liệu `weapons.ts`: cooldown, quạt đạn, gồng cung, chém/ném của Ren. Đạn lấy từ pool. */
 export class WeaponSystem implements ProjectileSpawner {
@@ -19,6 +21,7 @@ export class WeaponSystem implements ProjectileSpawner {
   enemyInRange: (x: number, y: number, range: number) => boolean = () => false;
   private nextFire = 0;
   private chargeStart = -1;
+  private queuedAt = -1e9;
   private bar: Phaser.GameObjects.Graphics;
   private barShown = false;
   private muzzle: Vec = { x: 0, y: 0 };
@@ -69,6 +72,7 @@ export class WeaponSystem implements ProjectileSpawner {
 
   update(time: number): void {
     const pl = this.player;
+    if (this.input.attackPressed) this.queuedAt = time;
     if (pl.dead || pl.sm.is('dash')) {
       this.cancel();
       return;
@@ -83,8 +87,14 @@ export class WeaponSystem implements ProjectileSpawner {
 
   // ------------------------------------------------------------ các kiểu ra đòn
 
+  /** Đang giữ nút đánh, hoặc vừa chạm nút trong khoảng đệm. */
+  private wantsAttack(time: number): boolean {
+    return this.input.attack || time - this.queuedAt <= ATTACK_BUFFER_MS;
+  }
+
   private updateAuto(time: number, def: WeaponDef): void {
-    if (!this.input.attack || time < this.nextFire) return;
+    if (time < this.nextFire || !this.wantsAttack(time)) return;
+    this.queuedAt = -1e9;
     const lv = this.level;
     this.nextFire = time + lv.cooldown * 1000;
     audio.sfx(def.id === 'tessen' ? 'wind' : 'shuriken');
@@ -115,8 +125,10 @@ export class WeaponSystem implements ProjectileSpawner {
     const ch = def.charge;
     if (!ch) return;
     const fullMs = ch.ms[run.weaponLevel - 1];
-    if (this.chargeStart < 0 && this.input.attackPressed && time >= this.nextFire) {
+    // bắt đầu gồng khi hết hồi mà vẫn đang giữ nút (bấm giữ từ lúc còn hồi cũng được), hoặc vừa chạm nhanh
+    if (this.chargeStart < 0 && time >= this.nextFire && this.wantsAttack(time)) {
       this.chargeStart = time;
+      this.queuedAt = -1e9;
       audio.sfx('charge');
     }
     if (this.chargeStart < 0) return;
@@ -152,7 +164,8 @@ export class WeaponSystem implements ProjectileSpawner {
 
   private updateMelee(time: number, def: WeaponDef): void {
     const m = def.melee;
-    if (!m || !this.input.attack || time < this.nextFire) return;
+    if (!m || time < this.nextFire || !this.wantsAttack(time)) return;
+    this.queuedAt = -1e9;
     const pl = this.player;
     pl.muzzle(this.muzzle);
     const angle = Math.atan2(pl.aim.y, pl.aim.x);

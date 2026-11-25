@@ -5,7 +5,6 @@ import { EVT, GAME_H, GAME_W, STAGE_COUNT } from '../constants';
 import { initCamera, setCamView } from '../core/camera';
 import { markStageStart, run } from '../core/GameState';
 import { bosses } from '../data/bosses';
-import { characters } from '../data/characters';
 import { stages } from '../data/stages';
 import type { Vec } from '../data/types';
 import { Boss } from '../entities/Boss';
@@ -18,6 +17,7 @@ import { HazardSystem } from '../systems/HazardSystem';
 import { HealthSystem } from '../systems/HealthSystem';
 import { InputController, resetTouchInput } from '../systems/InputController';
 import { PickupSystem } from '../systems/PickupSystem';
+import { SkillSystem } from '../systems/SkillSystem';
 import { SpawnSystem } from '../systems/SpawnSystem';
 import { StageFlow } from '../systems/StageFlow';
 import { buildTerrain, findMarker, type StageTerrain } from '../systems/TerrainBuilder';
@@ -48,6 +48,7 @@ export class GameScene extends Phaser.Scene {
   spawns!: SpawnSystem;
   combat!: CombatSystem;
   pickups!: PickupSystem;
+  skills!: SkillSystem;
   hazards!: HazardSystem;
   flow!: StageFlow;
   private backdrop!: Backdrop;
@@ -106,9 +107,16 @@ export class GameScene extends Phaser.Scene {
       this.player,
       this.health,
       this.fx,
-      () => characters[run.character].skill === 'dash',
       () => this.combat.smokeBomb(this.cameras.main.worldView),
       t,
+    );
+    this.skills = new SkillSystem(
+      this,
+      this.player,
+      this.controls.state,
+      this.weapons,
+      this.combat,
+      this.fx,
     );
     this.hazards = new HazardSystem(this, this.player, t, this.health);
     this.weapons.enemyInRange = (x, y, r) =>
@@ -141,8 +149,8 @@ export class GameScene extends Phaser.Scene {
 
     this.hazards.update(time, delta);
     this.player.update(time, delta);
+    this.skills.update(time);
     this.weapons.update(time);
-    if (this.controls.state.skillPressed && !this.player.dead) this.pickups.trySmoke();
     this.pickups.update(delta);
     this.spawns.update(time, delta);
     this.health.update();
@@ -169,8 +177,13 @@ export class GameScene extends Phaser.Scene {
       (_p, tile) => this.onHazard(tile as TileLike),
       (_p, tile) => this.hazardTouches(tile as TileLike),
     );
-    // đạn người chơi chạm đất đặc thì trả về pool
-    this.physics.add.collider(this.weapons.bullets, ground, (b) => (b as Projectile).kill());
+    // đạn người chơi chạm đất đặc thì trả về pool (trừ lốc xoáy bay xuyên tường)
+    this.physics.add.collider(
+      this.weapons.bullets,
+      ground,
+      (b) => (b as Projectile).kill(),
+      (b) => !(b as Projectile).passWalls,
+    );
   }
 
   private hazardTouches(tile: TileLike): boolean {

@@ -3,6 +3,7 @@ import { COLORS, GAME_W } from '../constants';
 import { initCamera } from '../core/camera';
 import { run } from '../core/GameState';
 import { CHARACTER_ORDER, characters } from '../data/characters';
+import { skills } from '../data/skills';
 import { weapons } from '../data/weapons';
 import type { CharacterId } from '../data/types';
 import { t } from '../text/t';
@@ -19,6 +20,8 @@ const PREVIEW = { x: 330, y: 182 };
 export class SelectScene extends Phaser.Scene {
   private cards = new Map<CharacterId, Phaser.GameObjects.Rectangle>();
   private desc!: Phaser.GameObjects.Text;
+  private skillName!: Phaser.GameObjects.Text;
+  private skillDesc!: Phaser.GameObjects.Text;
   private statGfx!: Phaser.GameObjects.Graphics;
   private statLabels: Phaser.GameObjects.Text[] = [];
   private previewNinja!: Phaser.GameObjects.Image;
@@ -66,6 +69,13 @@ export class SelectScene extends Phaser.Scene {
     });
 
     this.desc = makeText(this, 8, 146, '', { size: 14, wrap: GAME_W - 16, color: COLORS.textGold });
+    this.skillName = makeText(this, 200, 204, '', { size: 14, color: COLORS.textGold });
+    this.skillDesc = makeText(this, 200, 220, '', {
+      size: 12,
+      wrap: 146,
+      color: COLORS.text,
+      stroke: false,
+    });
     this.statGfx = this.add.graphics();
     this.previewNinja = this.add.image(PREVIEW.x - 28, PREVIEW.y, 'ninja-kage');
 
@@ -87,6 +97,9 @@ export class SelectScene extends Phaser.Scene {
     }
     const def = characters[id];
     this.desc.setText(t(def.descKey as TextKey));
+    const skill = skills[def.skill];
+    this.skillName.setText(`${t('select.skill')}: ${t(skill.nameKey)}`);
+    this.skillDesc.setText(t(skill.descKey));
     this.previewNinja.setTexture(`ninja-${id}`);
 
     this.statGfx.clear();
